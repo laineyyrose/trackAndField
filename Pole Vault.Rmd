@@ -1,0 +1,51 @@
+---
+title: "Pole Vault"
+author: "Lainey Rose"
+date: "2023-01-13"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Load data
+
+```{r}
+library(tidyverse)
+library(readr)
+library(ggplot2)
+womensPoleVault <- read.table("womenspolevault.txt", sep = '%', quote = "\"")
+newWomens <- tidyr::separate(womensPoleVault, V1, c('EMPTY', 'RANK', 'HEIGHT', 
+  'NAME', 'COUNTRY', 'BIRTHDATE', 'NUM', 'LOCATION', 'DATE'), sep = "\\s{2,}", ) %>%
+  select(-EMPTY)
+head(newWomens)
+mensPoleVault <- read.table("menspolevault.txt", sep = '%', quote = "\"")
+newMens <- tidyr::separate(mensPoleVault, V1, c('EMPTY', 'RANK', 'HEIGHT', 
+  'NAME', 'COUNTRY', 'BIRTHDATE', 'NUM', 'LOCATION', 'DATE'), sep = "\\s{2,}", ) %>%
+  select(-EMPTY)
+head(newMens)
+
+
+```
+
+Now that I have loaded the data for both the men's and women's events, I need to see where mistakes were made.It looks there were many parsing errors made that could affect my data analysis. After a quick look at it, there are a few errors where the names seem to mess up the data, so I need to find a way to fix this whether that be manually or by writing more code.
+
+
+I can also simplify the data since I only need to use a few of the columns. This might mean that the columns that were affected won't even be used. Let's start by simplifying the data:
+
+```{r}
+womensSimplified <- newWomens %>% select('HEIGHT', 'DATE')
+mensSimplified <- newMens %>% select('HEIGHT', 'DATE')
+```
+
+
+Now time for visualizing the data, using a histogram.
+
+```{r}
+ggplot(womensSimplified, aes(x = 'DATE', y = 'HEIGHT')) + geom_point()
+       
+ggplot(mensSimplified, aes(x = 'DATE', y = 'HEIGHT')) + geom_point()
+
+```
+
