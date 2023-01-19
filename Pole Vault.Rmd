@@ -24,21 +24,19 @@ newWomens <- tidyr::separate(womensPoleVault, V1, c('EMPTY', 'RANK', 'HEIGHT',
   'NAME', 'COUNTRY', 'BIRTHDATE', 'NUM', 'LOCATION', 'DATE'), sep = "\\s{2,}", ) %>%
   select(-EMPTY)
 head(newWomens)
-View(newWomens)
 
 newMens <- tidyr::separate(mensPoleVault, V1, c('EMPTY', 'RANK', 'HEIGHT', 
   'NAME', 'COUNTRY', 'BIRTHDATE', 'NUM', 'LOCATION', 'DATE'), sep = "\\s{2,}", ) %>%
   select(-EMPTY)
 head(newMens)
-View(newMens)
 ```
 
 Now that I have loaded the data for both the men's and women's events, I will start by simplifying the data so that it only has what I will need for my analysis.
 
 ```{r}
-womensSimplified <- newWomens %>% select(DATE, BIRTHDATE) %>% drop_na(DATE, BIRTHDATE)
+womensSimplified <- newWomens %>% select(DATE, BIRTHDATE, HEIGHT, NAME) %>% drop_na(DATE, BIRTHDATE, HEIGHT, NAME)
 
-mensSimplified <- newMens %>% select(DATE, BIRTHDATE) %>% drop_na(DATE, BIRTHDATE) 
+mensSimplified <- newMens %>% select(DATE, BIRTHDATE, HEIGHT, NAME) %>% drop_na(DATE, BIRTHDATE, HEIGHT, NAME) 
 ```
 
 I can now create a new table that has two additonal columns that only state the year, so that I can create an algorithm that strips the periods from both dates. 
@@ -48,31 +46,40 @@ womenRevised <- womensSimplified %>% mutate(YEAR = substr(DATE, 7, 10)) %>%
   mutate(BIRTHYEAR = substr(BIRTHDATE, 7, 10))
 womenRevised$YEAR <- as.numeric(as.character(womenRevised$YEAR))
 womenRevised$BIRTHYEAR <- as.numeric(as.character(womenRevised$BIRTHYEAR))
-View(womenRevised)
 sapply(womenRevised, class)
+View(womenRevised)
 
 menRevised <- mensSimplified %>% mutate(YEAR = substr(DATE, 7, 10)) %>% 
   mutate(BIRTHYEAR = substr(BIRTHDATE, 7, 10))
 menRevised$YEAR <- as.numeric(as.character(menRevised$YEAR))
-womenRevised$BIRTHYEAR <- as.numeric(as.character(womenRevised$BIRTHYEAR))
+menRevised$BIRTHYEAR <- as.numeric(as.character(menRevised$BIRTHYEAR))
 sapply(menRevised, class)
-View(menRevised)
 
 ```
 I now have to find the age of each individual by subtracting the date the event occurred by their birthdate minus 1900.
 
 ```{r}
-#womenRevised %>% mutate(AGE = )
+womenRevised %>% mutate(AGE = YEAR - BIRTHYEAR - 1900)
+
+menRevised %>% mutate(AGE = YEAR - BIRTHYEAR - 1900)
+```
+
+I now will need to remove trailing letters on the height so that I can correctly plot it.
+
+```{r}
+womenRevised$HEIGHT <- gsub('A','', womenRevised$HEIGHT)
+
+menRevised$HEIGHT <- gsub('A', '', menRevised$HEIGHT)
 ```
 
 
-Now time for visualizing the data, using a histogram.
+Now that the data has been simplified and cleaned, it is time for visualizing the data, using a scatterplot.
 
 ```{r}
 library(ggplot2)
-ggplot(womensSimplified, aes(x = HEIGHT)) + geom_histogram()
-       
-ggplot(mensSimplified, aes(x = HEIGHT)) + geom_histogram()
+ggplot(womenRevised, aes(x = AGE, y = HEIGHT)) + geom_point()
+
+ggplot(menRevised, aes(x = AGE, y = HEIGHT)) + geom_point()
 
 ```
 
