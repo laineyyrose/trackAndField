@@ -9,43 +9,70 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-Load data
+First we need to import the data from the website, 'alltimeathletics.com'
 
 ```{r}
 library(tidyverse)
 library(readr)
-library(ggplot2)
 womensPoleVault <- read.table("womenspolevault.txt", sep = '%', quote = "\"")
+mensPoleVault <- read.table("menspolevault.txt", sep = '%', quote = "\"")
+```
+Next, I will need to create a table for the data to be stored in and later visualized. However, I tried to do this simply using read.delim, and there were many errors. There were some issues with how the data was separated, as well as a lack of column labels. To fix this, I created a vector for the column labels and separated each value by at least two spaces, like so:
+
+```{r}
 newWomens <- tidyr::separate(womensPoleVault, V1, c('EMPTY', 'RANK', 'HEIGHT', 
   'NAME', 'COUNTRY', 'BIRTHDATE', 'NUM', 'LOCATION', 'DATE'), sep = "\\s{2,}", ) %>%
   select(-EMPTY)
 head(newWomens)
-mensPoleVault <- read.table("menspolevault.txt", sep = '%', quote = "\"")
+View(newWomens)
+
 newMens <- tidyr::separate(mensPoleVault, V1, c('EMPTY', 'RANK', 'HEIGHT', 
   'NAME', 'COUNTRY', 'BIRTHDATE', 'NUM', 'LOCATION', 'DATE'), sep = "\\s{2,}", ) %>%
   select(-EMPTY)
 head(newMens)
-
-
+View(newMens)
 ```
 
-Now that I have loaded the data for both the men's and women's events, I need to see where mistakes were made.It looks there were many parsing errors made that could affect my data analysis. After a quick look at it, there are a few errors where the names seem to mess up the data, so I need to find a way to fix this whether that be manually or by writing more code.
-
-
-I can also simplify the data since I only need to use a few of the columns. This might mean that the columns that were affected won't even be used. Let's start by simplifying the data:
+Now that I have loaded the data for both the men's and women's events, I will start by simplifying the data so that it only has what I will need for my analysis.
 
 ```{r}
-womensSimplified <- newWomens %>% select('HEIGHT', 'DATE')
-mensSimplified <- newMens %>% select('HEIGHT', 'DATE')
+womensSimplified <- newWomens %>% select(DATE, BIRTHDATE) %>% drop_na(DATE, BIRTHDATE)
+
+mensSimplified <- newMens %>% select(DATE, BIRTHDATE) %>% drop_na(DATE, BIRTHDATE) 
+```
+
+I can now create a new table that has two additonal columns that only state the year, so that I can create an algorithm that strips the periods from both dates. 
+
+```{r}
+womenRevised <- womensSimplified %>% mutate(YEAR = substr(DATE, 7, 10)) %>% 
+  mutate(BIRTHYEAR = substr(BIRTHDATE, 7, 10))
+womenRevised$YEAR <- as.numeric(as.character(womenRevised$YEAR))
+womenRevised$BIRTHYEAR <- as.numeric(as.character(womenRevised$BIRTHYEAR))
+View(womenRevised)
+sapply(womenRevised, class)
+
+menRevised <- mensSimplified %>% mutate(YEAR = substr(DATE, 7, 10)) %>% 
+  mutate(BIRTHYEAR = substr(BIRTHDATE, 7, 10))
+menRevised$YEAR <- as.numeric(as.character(menRevised$YEAR))
+womenRevised$BIRTHYEAR <- as.numeric(as.character(womenRevised$BIRTHYEAR))
+sapply(menRevised, class)
+View(menRevised)
+
+```
+I now have to find the age of each individual by subtracting the date the event occurred by their birthdate minus 1900.
+
+```{r}
+#womenRevised %>% mutate(AGE = )
 ```
 
 
 Now time for visualizing the data, using a histogram.
 
 ```{r}
-ggplot(womensSimplified, aes(x = 'DATE', y = 'HEIGHT')) + geom_point()
+library(ggplot2)
+ggplot(womensSimplified, aes(x = HEIGHT)) + geom_histogram()
        
-ggplot(mensSimplified, aes(x = 'DATE', y = 'HEIGHT')) + geom_point()
+ggplot(mensSimplified, aes(x = HEIGHT)) + geom_histogram()
 
 ```
 
