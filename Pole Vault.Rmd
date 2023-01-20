@@ -14,6 +14,7 @@ First we need to import the data from the website, 'alltimeathletics.com'
 ```{r}
 library(tidyverse)
 library(readr)
+library(dplyr)
 womensPoleVault <- read.table("womenspolevault.txt", sep = '%', quote = "\"")
 mensPoleVault <- read.table("menspolevault.txt", sep = '%', quote = "\"")
 ```
@@ -34,9 +35,9 @@ head(newMens)
 Now that I have loaded the data for both the men's and women's events, I will start by simplifying the data so that it only has what I will need for my analysis.
 
 ```{r}
-womensSimplified <- newWomens %>% select(DATE, BIRTHDATE, HEIGHT, NAME) %>% drop_na(DATE, BIRTHDATE, HEIGHT, NAME)
+womensSimplified <- newWomens %>% select(DATE, BIRTHDATE, HEIGHT, NAME, COUNTRY) %>% drop_na(DATE, BIRTHDATE, HEIGHT, NAME, COUNTRY)
 
-mensSimplified <- newMens %>% select(DATE, BIRTHDATE, HEIGHT, NAME) %>% drop_na(DATE, BIRTHDATE, HEIGHT, NAME) 
+mensSimplified <- newMens %>% select(DATE, BIRTHDATE, HEIGHT, NAME, COUNTRY) %>% drop_na(DATE, BIRTHDATE, HEIGHT, NAME, COUNTRY) 
 ```
 
 I can now create a new table that has two additonal columns that only state the year, so that I can create an algorithm that strips the periods from both dates. 
@@ -47,7 +48,6 @@ womenRevised <- womensSimplified %>% mutate(YEAR = substr(DATE, 7, 10)) %>%
 womenRevised$YEAR <- as.numeric(as.character(womenRevised$YEAR))
 womenRevised$BIRTHYEAR <- as.numeric(as.character(womenRevised$BIRTHYEAR))
 sapply(womenRevised, class)
-View(womenRevised)
 
 menRevised <- mensSimplified %>% mutate(YEAR = substr(DATE, 7, 10)) %>% 
   mutate(BIRTHYEAR = substr(BIRTHDATE, 7, 10))
@@ -59,17 +59,23 @@ sapply(menRevised, class)
 I now have to find the age of each individual by subtracting the date the event occurred by their birthdate minus 1900.
 
 ```{r}
-womenRevised %>% mutate(AGE = YEAR - BIRTHYEAR - 1900)
+library(lubridate)
+Bday <- parse_date_time2(womenRevised$BIRTHDATE, 'dmy', cutoff_2000 = 15)
+Rday <- parse_date_time2(womenRevised$DATE, 'dmY', cutoff_2000 = 20)
+Dif <- difftime(Rday, Bday, units = 'weeks')
+Please <- as.integer(Dif/52)
+New <- womenRevised %>% mutate(AGE = as.integer(Please))
+View(New)
 
-menRevised %>% mutate(AGE = YEAR - BIRTHYEAR - 1900)
+menPlot <- menRevised %>% mutate(AGE = YEAR - BIRTHYEAR - 1900)
 ```
 
 I now will need to remove trailing letters on the height so that I can correctly plot it.
 
 ```{r}
-womenRevised$HEIGHT <- gsub('A','', womenRevised$HEIGHT)
+womenPlot$HEIGHT <- gsub('A','', womenPlot$HEIGHT)
 
-menRevised$HEIGHT <- gsub('A', '', menRevised$HEIGHT)
+menPlot$HEIGHT <- gsub('A', '', menPlot$HEIGHT)
 ```
 
 
@@ -77,9 +83,10 @@ Now that the data has been simplified and cleaned, it is time for visualizing th
 
 ```{r}
 library(ggplot2)
-ggplot(womenRevised, aes(x = AGE, y = HEIGHT)) + geom_point()
+ggplot(New, aes(x = AGE, y = HEIGHT, color = COUNTRY)) + geom_point()
 
-ggplot(menRevised, aes(x = AGE, y = HEIGHT)) + geom_point()
+ggplot(menPlot, aes(x = AGE, y = HEIGHT, color = COUNTRY)) + geom_point()
 
 ```
 
+Now that the data has been visualized and we can get a better idea of what the data looks like its time to do some real statistics to see if there is a significant difference between womens and mens pole vault heights.
