@@ -11,7 +11,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 My objective for this analysis is to detect if there is a correlation between all time best pole vaulting heights and gender. I also want to look into the age category as well and see if there is any correlation there. 
 
-TO start, I will first need to import the data from the website, 'alltimeathletics.com'
+To start, I will first need to import the data from the website, 'alltimeathletics.com'
 
 ```{r}
 library(tidyverse)
@@ -105,7 +105,28 @@ mensAge
 
 From these visualizations, I first see a sort of bell curve for both age distributions, with men's ages being shifted a little more to the left. This would mean that younger men tend to have better performance, while women's best performance is slightly older. In terms of the scatter plots, there isn't a huge correlation, but we do see a few outliers for age. I was interested in this, so I decidd to do some further digging to see if these were mistakes in my calculations, or just incredibly athletic old people. It turns out, they were just outstanding with their performance, even at their age. Some people I found were Lucy Bryan who was 13, when she reached a 4.33 m Pole Vault. This was the youngest in the women's section and she also happens to share a birthday with me. I also found Bruno Brokken, who was 69, when he hit a Pole Vault at 5.75 m. He also happens to be a skydiving photography which I thought was pretty cool.
 
-Now that the data has been visualized and we can get a better idea of what the data looks like its time to do some real statistics to see if there is a significant difference between womens and mens pole vault heights.
+However, I still was interested in seeing whether men are better at pole vaulting. I can look at these graphs side by side, however, the scales are not equal, so I cannot really tell if there is truly a difference. So, I decided to create a new column, titled 'GENDER,' and then combine the tables together, that way I could graph them both on the same graph and look for any differences.
+
+```{r}
+womenCombine <- womenPlot %>% mutate(GENDER = 'female')
+
+menCombine <- menPlot %>% mutate(GENDER = 'male')
+
+finalPlot <- add_row(womenCombine, menCombine)
+finalPlot
+
+plot <- ggplot(finalPlot, aes(x = AGE, y = as.numeric(HEIGHT), color = GENDER)) + geom_point()
+plot
+```
+
+After doing this, it is pretty clear that men have higher scores by a tremendous amount. There is a wide gap between the two and the women's all time best, don't even begin to reach the men's scores. I wanted to create a boxplot for this as well to look more into this correlation.
+
+```{r}
+boxPlot <- ggplot(finalPlot, aes(x = as.numeric(HEIGHT), y = GENDER)) + geom_boxplot()
+boxPlot
+```
+
+Now that the data has been visualized and we can get a better idea of what the data looks like its time to do some real statistics to see if there is a significant difference between women's and men's pole vault heights.
 
 ```{r}
 womenResult <- median(as.integer(womenPlot$HEIGHT))
@@ -115,4 +136,6 @@ menResult <- median(as.integer(menPlot$HEIGHT))
 menResult
 ```
 
-From these results for the median, technically the men have a median of exactly one more than women. This does show some sort of 'proof' that their results are better. However, I also wanted to look at the age factor.
+As one would imagine, the men have a median of exactly one more than women. This seems significant enough to show a correlation between gender and pole vaulting performance. 
+
+In cocnlusion, after wrangling the data, separating the values, visualizing them, and finding statistical summaries, there does seem to be a correlation between gender and all time pole vaulting heights. Men seem to perform better than women in this event and the younger the individuals are, the better they seem to do, witht he exception of a few outliers.
