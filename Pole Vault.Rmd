@@ -138,4 +138,4 @@ menResult
 
 As one would imagine, the men have a median of exactly one more than women. This seems significant enough to show a correlation between gender and pole vaulting performance. 
 
-In cocnlusion, after wrangling the data, separating the values, visualizing them, and finding statistical summaries, there does seem to be a correlation between gender and all time pole vaulting heights. Men seem to perform better than women in this event and the younger the individuals are, the better they seem to do, witht he exception of a few outliers.
+In conclusion, after wrangling the data, separating the values, visualizing them, and finding statistical summaries, there does seem to be a correlation between gender and all time pole vaulting heights. Men seem to perform better than women in this event and the younger the individuals are, the better they seem to do, witht he exception of a few outliers.
