@@ -1,0 +1,141 @@
+---
+title: "Pole Vault"
+author: "Lainey Rose"
+date: "2023-01-13"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+My objective for this analysis is to detect if there is a correlation between all time best pole vaulting heights and gender. I also want to look into the age category as well and see if there is any correlation there. 
+
+To start, I will first need to import the data from the website, 'alltimeathletics.com'
+
+```{r}
+library(tidyverse)
+library(readr)
+library(dplyr)
+womensPoleVault <- read.table("womenspolevault.txt", sep = '%', quote = "\"")
+mensPoleVault <- read.table("menspolevault.txt", sep = '%', quote = "\"")
+```
+
+Next, I will need to create a table for the data to be stored in and later visualized. However, I tried to do this simply using read.delim, and there were many errors. There were some issues with how the data was separated, as well as a lack of column labels. To fix this, I created a vector for the column labels and separated each value by at least two spaces, like so:
+
+```{r}
+newWomens <- tidyr::separate(womensPoleVault, V1, c('EMPTY', 'RANK', 'HEIGHT', 
+  'NAME', 'COUNTRY', 'BIRTHDATE', 'NUM', 'LOCATION', 'DATE'), sep = "\\s{2,}", ) %>%
+  select(-EMPTY)
+head(newWomens)
+
+newMens <- tidyr::separate(mensPoleVault, V1, c('EMPTY', 'RANK', 'HEIGHT', 
+  'NAME', 'COUNTRY', 'BIRTHDATE', 'NUM', 'LOCATION', 'DATE'), sep = "\\s{2,}", ) %>%
+  select(-EMPTY)
+head(newMens)
+```
+
+Now that I have loaded the data for both the men's and women's events, I will start by simplifying the data so that it only has what I will need for my analysis. For example, the category I titled 'NUM,' doesn't have information I need, so it's best to just leave it out.
+I also had only 9 rows that were missing data, so I decided to just drop these, since I cannot plot them without the correct data. I checked to make sure they were dropped by searching for 'NA' in this new table, and there were no results.
+
+```{r}
+womensSimplified <- newWomens %>% select(DATE, BIRTHDATE, HEIGHT, NAME, COUNTRY) %>% drop_na(DATE, BIRTHDATE, HEIGHT, NAME, COUNTRY)
+
+mensSimplified <- newMens %>% select(DATE, BIRTHDATE, HEIGHT, NAME, COUNTRY) %>% drop_na(DATE, BIRTHDATE, HEIGHT, NAME, COUNTRY) 
+```
+
+Trying to calculate age was the next hard step. The 'DATE' was was in long hand, while the 'BIRTHDATE' was in short hand, so my first thought  was to create two new columns for just the year. I would need to convert both cplumns tp numeric, which I checked using the sapply function. I could then subtract the birth date from the date and then subtract 1900 to figure out the age. However, I realized this was an issue, because some people were born in the 2000s. So, I ended up not using these new columns.
+
+```{r}
+womenRevised <- womensSimplified %>% mutate(YEAR = substr(DATE, 7, 10)) %>% 
+  mutate(BIRTHYEAR = substr(BIRTHDATE, 7, 10))
+womenRevised$YEAR <- as.numeric(as.character(womenRevised$YEAR))
+womenRevised$BIRTHYEAR <- as.numeric(as.character(womenRevised$BIRTHYEAR))
+sapply(womenRevised, class)
+
+menRevised <- mensSimplified %>% mutate(YEAR = substr(DATE, 7, 10)) %>% 
+  mutate(BIRTHYEAR = substr(BIRTHDATE, 7, 10))
+menRevised$YEAR <- as.numeric(as.character(menRevised$YEAR))
+menRevised$BIRTHYEAR <- as.numeric(as.character(menRevised$BIRTHYEAR))
+sapply(menRevised, class)
+```
+My new plan, was to use the lubridate package to calculate the age of each individual. I creates 4 new variables and then added the final value to a new column, titled, 'AGE.' The biggest issue I had here, was that the calculated difference, was being found in weeks. To fix this, I simply divided the value by 52, to get an accurate age.
+
+```{r}
+library(lubridate)
+womenBirthdate <- parse_date_time2(womenRevised$BIRTHDATE, 'dmy', cutoff_2000 = 5)
+womenDate <- parse_date_time2(womenRevised$DATE, 'dmY', cutoff_2000 = 20)
+womenDifference <- difftime(womenDate, womenBirthdate, units = 'weeks')
+womenAge <- as.integer(womenDifference/52)
+womenPlot <- womenRevised %>% mutate(AGE = womenAge)
+
+menBirthdate <- parse_date_time2(menRevised$BIRTHDATE, 'dmy', cutoff_2000 = 5)
+menDate <- parse_date_time2(menRevised$DATE, 'dmY', cutoff_2000 = 20)
+menDifference <- difftime(menDate, menBirthdate, units = 'weeks')
+menAge <- as.integer(menDifference/52)
+menPlot <- menRevised %>% mutate(AGE = menAge)
+View(menPlot)
+
+```
+
+My next issue was the trailing letters on the height. For some reason, there was an A next to a few of the recorded heights that was preventing me from plotting them. I used the gsub function to remove these.
+
+```{r}
+womenPlot$HEIGHT <- gsub('A','', womenPlot$HEIGHT)
+
+menPlot$HEIGHT <- gsub('A', '', menPlot$HEIGHT)
+```
+
+Now that the data has been simplified and cleaned, I needed to visualize it, to begin to see if there were any trends or outliers I should look out for. I decided to do a scatter plot for both mens and womens, comparing age and height, as well as a simple histogram for age to see if there was any trend there. I had to start by making Height a numeric, so that it would plot correctly.
+
+```{r}
+library(ggplot2)
+womens <- ggplot(womenPlot, aes(x = AGE, y = as.numeric(HEIGHT))) + geom_point()
+womens
+
+mens <- ggplot(menPlot, aes(x = AGE, y = as.numeric(HEIGHT))) + geom_point()
+mens
+
+womensAge <- ggplot(womenPlot, aes(x = AGE)) + geom_histogram()
+womensAge
+
+mensAge <- ggplot(menPlot, aes(x = AGE)) + geom_histogram()
+mensAge
+```
+
+From these visualizations, I first see a sort of bell curve for both age distributions, with men's ages being shifted a little more to the left. This would mean that younger men tend to have better performance, while women's best performance is slightly older. In terms of the scatter plots, there isn't a huge correlation, but we do see a few outliers for age. I was interested in this, so I decidd to do some further digging to see if these were mistakes in my calculations, or just incredibly athletic old people. It turns out, they were just outstanding with their performance, even at their age. Some people I found were Lucy Bryan who was 13, when she reached a 4.33 m Pole Vault. This was the youngest in the women's section and she also happens to share a birthday with me. I also found Bruno Brokken, who was 69, when he hit a Pole Vault at 5.75 m. He also happens to be a skydiving photography which I thought was pretty cool.
+
+However, I still was interested in seeing whether men are better at pole vaulting. I can look at these graphs side by side, however, the scales are not equal, so I cannot really tell if there is truly a difference. So, I decided to create a new column, titled 'GENDER,' and then combine the tables together, that way I could graph them both on the same graph and look for any differences.
+
+```{r}
+womenCombine <- womenPlot %>% mutate(GENDER = 'female')
+
+menCombine <- menPlot %>% mutate(GENDER = 'male')
+
+finalPlot <- add_row(womenCombine, menCombine)
+finalPlot
+
+plot <- ggplot(finalPlot, aes(x = AGE, y = as.numeric(HEIGHT), color = GENDER)) + geom_point()
+plot
+```
+
+After doing this, it is pretty clear that men have higher scores by a tremendous amount. There is a wide gap between the two and the women's all time best, don't even begin to reach the men's scores. I wanted to create a boxplot for this as well to look more into this correlation.
+
+```{r}
+boxPlot <- ggplot(finalPlot, aes(x = as.numeric(HEIGHT), y = GENDER)) + geom_boxplot()
+boxPlot
+```
+
+Now that the data has been visualized and we can get a better idea of what the data looks like its time to do some real statistics to see if there is a significant difference between women's and men's pole vault heights.
+
+```{r}
+womenResult <- median(as.integer(womenPlot$HEIGHT))
+womenResult
+
+menResult <- median(as.integer(menPlot$HEIGHT))
+menResult
+```
+
+As one would imagine, the men have a median of exactly one more than women. This seems significant enough to show a correlation between gender and pole vaulting performance. 
+
+In cocnlusion, after wrangling the data, separating the values, visualizing them, and finding statistical summaries, there does seem to be a correlation between gender and all time pole vaulting heights. Men seem to perform better than women in this event and the younger the individuals are, the better they seem to do, witht he exception of a few outliers.
